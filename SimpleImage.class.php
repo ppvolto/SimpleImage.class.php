@@ -88,27 +88,34 @@ class SimpleImage {
     }
 
     function resize($width, $height) {
-        $new_image = imagecreatetruecolor($width, $height);
-        if (($this->image_type == IMAGETYPE_GIF) || ($this->image_type == IMAGETYPE_PNG)) {
-            imagealphablending($new_image, false);
-            imagesavealpha($new_image, true);
-            $transparent = imagecolorallocatealpha($new_image, 255, 255, 255, 127);
-            imagefilledrectangle($new_image, 0, 0, $width, $height, $transparent);
-        }
+        $new_image = $this->createImage($width, $height);
         imagecopyresampled($new_image, $this->image, 0, 0, 0, 0, $width, $height, $this->getWidth(), $this->getHeight());
         $this->image = $new_image;
     }
 
     public function crop($x, $y, $width, $height) {
-        $new_image = imagecreatetruecolor($width, $height);
-        if (($this->image_type == IMAGETYPE_GIF) || ($this->image_type == IMAGETYPE_PNG)) {
-            imagealphablending($new_image, false);
-            imagesavealpha($new_image, true);
-            $transparent = imagecolorallocatealpha($new_image, 255, 255, 255, 127);
-            imagefilledrectangle($new_image, 0, 0, $width, $height, $transparent);
-        }
+        $new_image = $this->createImage($width, $height);
         imagecopyresampled($new_image, $this->image, 0, 0, $x, $y, $width, $height, $width, $height);
         $this->image = $new_image;
+    }
+
+    private function createImage($width, $height) {
+        $new_image = imagecreatetruecolor($width, $height);
+        if ($this->image_type == IMAGETYPE_GIF || $this->image_type == IMAGETYPE_PNG) {
+            $current_transparent = imagecolortransparent($this->image);
+            if ($current_transparent != -1) {
+                $transparent_color = imagecolorsforindex($this->image, $current_transparent);
+                $current_transparent = imagecolorallocate($new_image, $transparent_color['red'], $transparent_color['green'], $transparent_color['blue']);
+                imagefill($new_image, 0, 0, $current_transparent);
+                imagecolortransparent($new_image, $current_transparent);
+            } elseif ($this->image_type == IMAGETYPE_PNG) {
+                imagealphablending($new_image, false);
+                $color = imagecolorallocatealpha($new_image, 0, 0, 0, 127);
+                imagefill($new_image, 0, 0, $color);
+                imagesavealpha($new_image, true);
+            }
+        }
+        return $new_image;
     }
 
 }
