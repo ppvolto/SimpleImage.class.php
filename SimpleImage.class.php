@@ -117,7 +117,40 @@ class SimpleImage {
         }
         return $new_image;
     }
-
+    
+    public function createGradient($x, $y, $xBlend = false ,$yBlend = false)
+    {
+        $w = $this->getWidth();
+        $h = $this->getHeight();
+        $new_image = imagecreatetruecolor($w, $h);
+        imagealphablending($new_image, false);
+        imagesavealpha($new_image, true);
+        imagecopy($new_image, $this->image, 0, 0, 0, 0, $w, $h);
+        $dx = $w - $x;
+        $dy = $h - $y;
+        if($x < 0){ $dx = $x * -1; $x = $w - $dx; }
+        if($y < 0){ $dy = $y * -1; $y = $h - $dy; }
+        $xp = $yp = 0;
+        $max = ((($yBlend ? $dy : 0) + ($xBlend ? $dx : 0))/2);
+        $p = 1 / $max;
+        imagesavealpha($new_image,true);
+        for($i = 0; $i < $dx; $i++) {
+            if($xBlend) $xp = ($i - $dx) * -1;
+            for ($j = 0; $j < $dy; $j++) {
+                if($yBlend) $yp = ($j - $dy) * -1;
+                $result = sqrt(($xp + $yp) * ($xp + $yp));
+                $pointX = $x + $i;
+                $pointY = $y + $j;
+                $rgba = imagecolorat( $this->image, $x + $i , $y + $j );
+                $a = ($rgba >> 24) & 0x7F; $r = ($rgba >> 16) & 0xFF; $g = ($rgba >> 8) & 0xFF; $b = $rgba & 0xFF;
+                $color = imagecolorallocatealpha( $new_image , $r, $g, $b, 127 - (127 * ( $result < $max ? ($result / $max) : 1 )));
+                imagesetpixel( $new_image , $x + $i , $y + $j , $color );
+            }
+        }
+        imagealphablending($new_image, false);
+        imagesavealpha($new_image,true);
+        $this->image = $new_image;
+    }
 }
 
 ?>
